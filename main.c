@@ -109,7 +109,7 @@ int main(int argc, char *argv[])
             {
                 maskedAddrByLevelAry[i] = extractNumberFromAddress(trace.addr, bitMaskAry[i], maskedValRightShiftAmt[i]);
             }
-            printf("currently inserting address 0x%08X into memory\n", trace.addr);
+            // printf("currently inserting address 0x%08X into memory\n", trace.addr);
             numOfAccesses = recordPageAccess(level0Ptr, maskedAddrByLevelAry, 0, numOfLevels);
             log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }

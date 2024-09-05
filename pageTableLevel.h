@@ -19,7 +19,7 @@ struct Level
     PageTable *pageTablePtr;
     Level **nextLevelPtr;
 };
-Level newNode(int depth, int numOfAccess, PageTable *PageTablePtr);
+Level *newNode(int depth, int numOfAccess, PageTable *PageTablePtr);
 void initializeNewNodeAry(Level *node, int numOfEntries);
 unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currDepth, int numOfLevels);
 void destroyPageTable(PageTable pgTbl);

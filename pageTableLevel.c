@@ -3,9 +3,16 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-Level newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
+Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
 {
-    Level newNode = {depth, numOfAccess, pageTablePtr, NULL};
+    // Level newNode = {depth, numOfAccess, pageTablePtr, NULL};
+    Level *newNode = (Level *)malloc(sizeof(Level));
+    int numOfEntries = pageTablePtr->entryCount[depth];
+    Level **nextLvlPtr = (Level **)malloc(numOfEntries * sizeof(Level *));
+    newNode->depth = depth;
+    newNode->numOfAccesses = numOfAccess;
+    newNode->pageTablePtr = pageTablePtr;
+    newNode->nextLevelPtr = nextLvlPtr;
     return newNode;
 }
 
@@ -80,8 +87,7 @@ else if depth == max_depth
 */
 unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currDepth, int numOfLevels)
 {
-
-    printf("Current depth: %d\t%d\n", nodePtr->depth, currDepth);
+    // printf("Current depth: %d\t%d\n", nodePtr->depth, currDepth);
     uint32_t currMaskedAddr = maskedAddrAry[currDepth];
     Level newNodeCreated;
     Level *newNodePtr;
@@ -93,19 +99,17 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currD
     {
         if (nodePtr->nextLevelPtr[currMaskedAddr] != NULL)
         {
-            printf("Matching address mask found\n");
-            printf("Current num of access: %d\t%d\n", nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses, nodePtr->numOfAccesses);
+            // printf("Matching address mask found\n");
+            // printf("Current num of access: %d\n", nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
             nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses += 1;
-            printf("number of access incremented for some address lol \n");
+            // printf("number of access incremented for some address lol \n");
         }
         else
         {
-            newNodeCreated = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
-            newNodePtr = &newNodeCreated;
-            printf("new node created depth: %d\n", newNodePtr->depth);
-            initializeNewNodeAry(newNodePtr, newNodePtr->pageTablePtr->entryCount[newNodePtr->depth]);
+            newNodePtr = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
+            // printf("new node created depth: %d\n", newNodePtr->depth);
             nodePtr->nextLevelPtr[currMaskedAddr] = newNodePtr;
-            printf("Successfully inserted new node\n");
+            // printf("Successfully inserted new node\n");
         }
         printf("Still recursively searching for address\n");
         nodePtr = nodePtr->nextLevelPtr[currMaskedAddr];
