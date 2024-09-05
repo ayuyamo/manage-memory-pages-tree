@@ -49,7 +49,7 @@ int main(int argc, char *argv[])
     {
         pageNumberLength += numBitsPerLevelAry[i];
     }
-    printf("Length (in bits) of page number: %d\n", pageNumberLength);
+    // printf("Length (in bits) of page number: %d\n", pageNumberLength);
 
     unsigned int currMask;
     unsigned int numOfMaskBits;
@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     {
         currMask = 1;
         numOfMaskBits = numBitsPerLevelAry[i];
-        for (int b = 1; b < numOfMaskBits; ++b)
+        for (unsigned int b = 1; b < numOfMaskBits; ++b)
         {
             currMask = currMask << 1;
             currMask = currMask | 1;
@@ -97,7 +97,6 @@ int main(int argc, char *argv[])
         exit(1);
     }
     uint32_t *maskedAddrByLevelAry = (uint32_t *)malloc(numOfLevels * sizeof(uint32_t));
-    uint32_t currMaskedAddr;
     int numOfAccesses = 0;
     while (!feof(ifp)) /*FIXME: now implement the PageTable and Level*/
     {
@@ -114,13 +113,12 @@ int main(int argc, char *argv[])
             log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }
     }
+    printf("All addresses proccessed\n");
 
     /* clean up and return success */
     fclose(ifp);
-    free(tracefile);
-    deleteAllLevelNodes(level0Ptr);
-    destroyPageTable(pgTbl);
-    free(numBitsPerLevelStr);
+    // deleteAllLevelNodes(level0Ptr);
+    // destroyPageTable(pgTbl);
     free(numBitsPerLevelAry);
     free(maskedAddrByLevelAry);
     free(bitMaskAry);

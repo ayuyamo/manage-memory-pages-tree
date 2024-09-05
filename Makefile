@@ -18,11 +18,11 @@ PROGRAM = pagetrace
 $(PROGRAM) : $(OBJS)
 	$(CC) -o $(PROGRAM) $(OBJS)
 
-main.o : main.cpp 
-	$(CC) $(CCFLAGS) main.cpp
+main.o : main.c 
+	$(CC) $(CCFLAGS) main.c
 
-pageTableLevel.o : pageTableLevel.cpp pageTableLevel.h 
-	$(CC) $(CCFLAGS) pageTableLevel.cpp
+pageTableLevel.o : pageTableLevel.c pageTableLevel.h 
+	$(CC) $(CCFLAGS) pageTableLevel.c
 
 tracereader.o : tracereader.c tracereader.h
 	$(CC) $(CFLAGS) tracereader.c

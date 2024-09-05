@@ -94,28 +94,29 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currD
     {
         nodePtr->numOfAccesses += 1;
     }
-    if (currDepth < numOfLevels - 1)
+    /* second part of expression account for case were there is only 1 level*/
+    if (currDepth < numOfLevels - 1 || ((nodePtr->depth == 0) && numOfLevels == 1))
     {
+        // printf("enter if statement\n");
         if (nodePtr->nextLevelPtr[currMaskedAddr] != NULL)
         {
-            // printf("Matching address mask found\n");
-            // printf("Current num of access: %d\n", nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
+            printf("found index address for 0x%X\n", currMaskedAddr);
             nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses += 1;
-            // printf("number of access incremented for some address lol \n");
+            printf("successfully incremented value for index 0x%X\n", currMaskedAddr);
         }
         else
         {
+            printf("level at index 0x%X hasnt been added to array, creating new node...\n", currMaskedAddr);
             newNodePtr = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
-            // printf("new node created depth: %d\n", newNodePtr->depth);
+            printf("new node created\n");
             nodePtr->nextLevelPtr[currMaskedAddr] = newNodePtr;
-            // printf("Successfully inserted new node\n");
+            printf("new node added to array at index 0c%X, num of accesses = %d\n", currMaskedAddr, nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
         }
         nodePtr = nodePtr->nextLevelPtr[currMaskedAddr];
         return recordPageAccess(nodePtr, maskedAddrAry, currDepth + 1, numOfLevels);
-    }
-    else if (nodePtr->depth == nodePtr->pageTablePtr->levelCount - 1)
+    } /* for mult. levels, curr works for numOfLevels = 3 and above*/
+    else if (nodePtr->depth == nodePtr->pageTablePtr->levelCount - 1 || (nodePtr->depth == 1 && numOfLevels == 1))
     {
-        // free(newNodePtr);
         return nodePtr->numOfAccesses;
     }
 }

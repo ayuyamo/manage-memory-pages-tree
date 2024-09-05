@@ -6,7 +6,7 @@ typedef struct
 {
     int levelCount;
     int *bitsPerLevel;
-    int *bitMaskAry;
+    uint32_t *bitMaskAry;
     int *shiftAry;
     int *entryCount;
 } PageTable;
