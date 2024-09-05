@@ -89,7 +89,6 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currD
 {
     // printf("Current depth: %d\t%d\n", nodePtr->depth, currDepth);
     uint32_t currMaskedAddr = maskedAddrAry[currDepth];
-    Level newNodeCreated;
     Level *newNodePtr;
     if (nodePtr->depth == 0)
     {
@@ -111,13 +110,12 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currD
             nodePtr->nextLevelPtr[currMaskedAddr] = newNodePtr;
             // printf("Successfully inserted new node\n");
         }
-        printf("Still recursively searching for address\n");
         nodePtr = nodePtr->nextLevelPtr[currMaskedAddr];
         return recordPageAccess(nodePtr, maskedAddrAry, currDepth + 1, numOfLevels);
     }
     else if (nodePtr->depth == nodePtr->pageTablePtr->levelCount - 1)
     {
-        free(newNodePtr);
+        // free(newNodePtr);
         return nodePtr->numOfAccesses;
     }
 }
