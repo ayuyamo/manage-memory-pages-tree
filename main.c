@@ -5,6 +5,7 @@
 #include "pageTableLevel.h"
 #include "tracereader.h"
 #include "log.h"
+
 int main(int argc, char *argv[])
 { // extract arguments from user input
     if (argc != 3)
@@ -42,16 +43,13 @@ int main(int argc, char *argv[])
     }
 
     int pageNumberLength = 0;
-    // int offset = 0;
     int addressLength = 32;
-    /* calculate offset & number of bits in page number*/
+    /* calculate number of bits in page number*/
     for (int i = 0; i < numOfLevels; ++i)
     {
         pageNumberLength += numBitsPerLevelAry[i];
     }
     printf("Length (in bits) of page number: %d\n", pageNumberLength);
-    // offset = addressLength - pageNumberLength;
-    // printf("Offset: %d\n", offset);
 
     unsigned int currMask;
     unsigned int numOfMaskBits;
@@ -73,30 +71,24 @@ int main(int argc, char *argv[])
         numOfBitsMasked += numBitsPerLevelAry[i];
         bitMaskAry[i] = currMask;
     }
-    PageTable pgTbl = {numOfLevels, numBitsPerLevelAry, bitMaskAry, maskedValRightShiftAmt, entryCount};
-    printPageTableInfo(pgTbl);
 
     log_bitmasks(numOfLevels, bitMaskAry);
-
-    // reading memory trace file
-    // p2AddrTr mtrace;
-    // unsigned int vAddr;
-    // // tracef_h - file handle from fopen
-    // FILE *tracef_h = fopen(tracefile, "r");
-
-    // if (tracef_h == NULL)
-    // {
-    //     perror("Error opening file");
-    // }
-    // if (NextAddress(tracef_h, &mtrace))
-    // {
-    //     vAddr = mtrace.addr;
-    //     printf("%d", vAddr);
-    // }
 
     FILE *ifp;           /* trace file */
     unsigned long i = 0; /* instructions processed */
     p2AddrTr trace;      /* traced address */
+    /*Initialize PageTable object*/
+    PageTable pgTbl = {numOfLevels, numBitsPerLevelAry, bitMaskAry, maskedValRightShiftAmt, entryCount};
+    PageTable *pgTblPtr = &pgTbl;
+    // printPageTableInfo(pgTbl);
+    /*Initialize level 0 object*/
+    Level **nextLevelPtr1 = (Level **)malloc(entryCount[0] * sizeof(Level *));
+    for (int i = 0; i < entryCount[0]; ++i)
+    {
+        nextLevelPtr1[i] = NULL;
+    }
+    Level level0 = {0, 0, pgTblPtr, nextLevelPtr1};
+    Level *level0Ptr = &level0;
 
     /* attempt to open trace file */
     if ((ifp = fopen(tracefile, "rb")) == NULL)
@@ -106,6 +98,7 @@ int main(int argc, char *argv[])
     }
     uint32_t *maskedAddrByLevelAry = (uint32_t *)malloc(numOfLevels * sizeof(uint32_t));
     uint32_t currMaskedAddr;
+    int numOfAccesses = 0;
     while (!feof(ifp)) /*FIXME: now implement the PageTable and Level*/
     {
         /* get next address and process */
@@ -114,17 +107,18 @@ int main(int argc, char *argv[])
             /*FIXME: try to mask values by level and call log function to print it */
             for (int i = 0; i < numOfLevels; ++i)
             {
-                // currMaskedAddr = trace.addr & bitMaskAry[i];
-                // currMaskedAddr = currMaskedAddr >> maskedValRightShiftAmt[i];
-                // maskedAddrByLevelAry[i] = currMaskedAddr;
+                maskedAddrByLevelAry[i] = extractNumberFromAddress(trace.addr, bitMaskAry[i], maskedValRightShiftAmt[i]);
             }
-            // log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, 1);
+            printf("currently inserting address 0x%08X into memory\n", trace.addr);
+            numOfAccesses = recordPageAccess(level0Ptr, maskedAddrByLevelAry, 0, numOfLevels);
+            log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }
     }
 
     /* clean up and return success */
     fclose(ifp);
     free(tracefile);
+    deleteAllLevelNodes(level0Ptr);
     destroyPageTable(pgTbl);
     free(numBitsPerLevelStr);
     free(numBitsPerLevelAry);
