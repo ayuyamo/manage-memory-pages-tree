@@ -98,6 +98,7 @@ int main(int argc, char *argv[])
     }
     uint32_t *maskedAddrByLevelAry = (uint32_t *)malloc(numOfLevels * sizeof(uint32_t));
     int numOfAccesses = 0;
+    int line_count = 0;
     while (!feof(ifp)) /*FIXME: now implement the PageTable and Level*/
     {
         /* get next address and process */
@@ -110,10 +111,11 @@ int main(int argc, char *argv[])
             }
             // printf("currently inserting address 0x%08X into memory\n", trace.addr);
             numOfAccesses = recordPageAccess(level0Ptr, maskedAddrByLevelAry, 0, numOfLevels);
+            /* check if addr is in target arr*/
             log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }
     }
-    printf("All addresses proccessed\n");
+    // printf("All addresses proccessed\n");
 
     /* clean up and return success */
     fclose(ifp);

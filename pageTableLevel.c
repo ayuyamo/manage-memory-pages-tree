@@ -9,6 +9,10 @@ Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
     Level *newNode = (Level *)malloc(sizeof(Level));
     int numOfEntries = pageTablePtr->entryCount[depth];
     Level **nextLvlPtr = (Level **)malloc(numOfEntries * sizeof(Level *));
+    for (int i = 0; i < numOfEntries; ++i)
+    {
+        nextLvlPtr[i] = NULL;
+    }
     newNode->depth = depth;
     newNode->numOfAccesses = numOfAccess;
     newNode->pageTablePtr = pageTablePtr;
@@ -95,24 +99,27 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currD
         nodePtr->numOfAccesses += 1;
     }
     /* second part of expression account for case were there is only 1 level*/
-    if (currDepth < numOfLevels - 1 || ((nodePtr->depth == 0) && numOfLevels == 1))
+    if (currDepth < numOfLevels - 1 || (nodePtr->depth == 0 && numOfLevels == 1))
     {
         // printf("enter if statement\n");
         if (nodePtr->nextLevelPtr[currMaskedAddr] != NULL)
         {
-            printf("found index address for 0x%X\n", currMaskedAddr);
+            // printf("found index address for 0x%X\n", currMaskedAddr);
             nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses += 1;
-            printf("successfully incremented value for index 0x%X\n", currMaskedAddr);
+            // printf("successfully incremented value for index 0x%X\n", currMaskedAddr);
         }
         else
         {
-            printf("level at index 0x%X hasnt been added to array, creating new node...\n", currMaskedAddr);
+            // printf("level at index 0x%X hasnt been added to array, creating new node...\n", currMaskedAddr);
             newNodePtr = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
-            printf("new node created\n");
+            // printf("new node created\n");
             nodePtr->nextLevelPtr[currMaskedAddr] = newNodePtr;
-            printf("new node added to array at index 0c%X, num of accesses = %d\n", currMaskedAddr, nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
+            // printf("new node added to array at index 0x%X, num of accesses = %d\n", currMaskedAddr, nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
         }
         nodePtr = nodePtr->nextLevelPtr[currMaskedAddr];
+        // if (nodePtr->depth == numOfLevels - 1)
+        //     return nodePtr->numOfAccesses;
+        // else
         return recordPageAccess(nodePtr, maskedAddrAry, currDepth + 1, numOfLevels);
     } /* for mult. levels, curr works for numOfLevels = 3 and above*/
     else if (nodePtr->depth == nodePtr->pageTablePtr->levelCount - 1 || (nodePtr->depth == 1 && numOfLevels == 1))
