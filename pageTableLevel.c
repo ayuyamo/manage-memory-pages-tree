@@ -5,7 +5,6 @@
 
 Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
 {
-    // Level newNode = {depth, numOfAccess, pageTablePtr, NULL};
     Level *newNode = (Level *)malloc(sizeof(Level));
     int numOfEntries = pageTablePtr->entryCount[depth];
     Level **nextLvlPtr = (Level **)malloc(numOfEntries * sizeof(Level *));
@@ -20,23 +19,15 @@ Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
     return newNode;
 }
 
-void initializeNewNodeAry(Level *node, int numOfEntries)
+void destroyPageTable(PageTable *pgTblPtr)
 {
-    node->nextLevelPtr = (Level **)malloc(numOfEntries * sizeof(Level *));
-    for (int i = 0; i < numOfEntries; ++i)
-    {
-        node->nextLevelPtr[i] = NULL;
-    }
-}
-void destroyPageTable(PageTable pgTbl)
-{
-    free(pgTbl.bitsPerLevel);
-    free(pgTbl.bitMaskAry);
-    free(pgTbl.shiftAry);
-    free(pgTbl.entryCount);
+    free(pgTblPtr->bitsPerLevel);
+    free(pgTblPtr->bitMaskAry);
+    free(pgTblPtr->shiftAry);
+    free(pgTblPtr->entryCount);
 }
 
-unsigned int extractNumberFromAddress(unsigned int address, unsigned int mask, unsigned int shift)
+unsigned int extractPageNumberFromAddress(unsigned int address, unsigned int mask, unsigned int shift)
 {
     unsigned int extractedNum;
     extractedNum = address & mask;
@@ -44,39 +35,7 @@ unsigned int extractNumberFromAddress(unsigned int address, unsigned int mask, u
     return extractedNum;
 }
 
-void printPageTableInfo(PageTable pgTbl)
-{
-    printf("-----------------------------\n");
-    printf("Current PageTable Obj Info:\n");
-    printf("Number of levels: %d\n", pgTbl.levelCount);
-    printf("# of bits per level, its respective mask val and right shift amount: ");
-    for (int i = 0; i < pgTbl.levelCount; ++i)
-    {
-        printf("%d %08X %d\n", pgTbl.bitsPerLevel[i], pgTbl.bitMaskAry[i], pgTbl.shiftAry[i]);
-    }
-    printf("Entry Count for each level:\n");
-    for (int i = 0; i < pgTbl.levelCount; ++i)
-    {
-        printf("Level %d: %d\n", i, pgTbl.entryCount[i]);
-    }
-}
-
-// Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
-// {
-//     Level newNode = {depth, numOfAccess, pageTablePtr, NULL};
-//     return &newNode;
-// }
-
-// void initializeNewNodeAry(Level *node, int numOfEntries)
-// {
-//     node->nextLevelPtr = (Level **)malloc(numOfEntries * sizeof(Level *));
-//     for (int i = 0; i < numOfEntries; ++i)
-//     {
-//         node->nextLevelPtr[i] = NULL;
-//     }
-// }
-
-/* --Pseudo code for insertNode--
+/* --Pseudocode for recordPageAccess (recursive function)--
 if depth < max_depth
         if (partial)address is found
             increment num of access for the level at index that == address mask
@@ -84,49 +43,44 @@ if depth < max_depth
             // create new node at said index
             nodePtr->nextLevelPtr[maskedAddrAry[nodePtr->depth]] = newNode(nodePtr->depth + 1, 1, nodePtr->pageTablePtr);
 
-        insertnode(nodePtr->nextLevelPtr[maskedAddrAry[nodePtr->depth]], maskedAddrAry)
+        recordPageAccess(nodePtr->nextLevelPtr[maskedAddrAry[nodePtr->depth]], maskedAddrAry)
 
 else if depth == max_depth
         return
 */
-unsigned int recordPageAccess(Level *nodePtr, uint32_t *maskedAddrAry, int currDepth, int numOfLevels)
+unsigned int recordPageAccess(Level *nodePtr, uint32_t *bitMaskAry)
 {
-    // printf("Current depth: %d\t%d\n", nodePtr->depth, currDepth);
-    uint32_t currMaskedAddr = maskedAddrAry[currDepth];
-    Level *newNodePtr;
-    if (nodePtr->depth == 0)
+    int currDepth = nodePtr->depth;
+    int numOfLevels = nodePtr->pageTablePtr->levelCount;
+    uint32_t currMask = bitMaskAry[currDepth];
+
+    if (nodePtr->depth == 0) /* Increment the number of times the root node pointer was accessed*/
     {
         nodePtr->numOfAccesses += 1;
     }
-    /* second part of expression account for case were there is only 1 level*/
-    if (currDepth < numOfLevels - 1 || (nodePtr->depth == 0 && numOfLevels == 1))
+    if (currDepth <= numOfLevels - 1) /*Executes when page indices are still being inserted into the tree */
     {
-        // printf("enter if statement\n");
-        if (nodePtr->nextLevelPtr[currMaskedAddr] != NULL)
-        {
-            // printf("found index address for 0x%X\n", currMaskedAddr);
-            nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses += 1;
-            // printf("successfully incremented value for index 0x%X\n", currMaskedAddr);
+        if (nodePtr->nextLevelPtr[currMask] != NULL)
+        { /*Increment num of access of current Level node if page indice
+            already exists in its nextLevelPtr array*/
+            nodePtr->nextLevelPtr[currMask]->numOfAccesses += 1;
         }
         else
-        {
-            // printf("level at index 0x%X hasnt been added to array, creating new node...\n", currMaskedAddr);
+        { /* If page indice does not exist, create & initalize a new
+             level node pointer and pass it into nextLevelPtr array */
+            Level *newNodePtr;
             newNodePtr = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
-            // printf("new node created\n");
-            nodePtr->nextLevelPtr[currMaskedAddr] = newNodePtr;
-            // printf("new node added to array at index 0x%X, num of accesses = %d\n", currMaskedAddr, nodePtr->nextLevelPtr[currMaskedAddr]->numOfAccesses);
+            nodePtr->nextLevelPtr[currMask] = newNodePtr;
         }
-        nodePtr = nodePtr->nextLevelPtr[currMaskedAddr];
-        // if (nodePtr->depth == numOfLevels - 1)
-        //     return nodePtr->numOfAccesses;
-        // else
-        return recordPageAccess(nodePtr, maskedAddrAry, currDepth + 1, numOfLevels);
-    } /* for mult. levels, curr works for numOfLevels = 3 and above*/
-    else if (nodePtr->depth == nodePtr->pageTablePtr->levelCount - 1 || (nodePtr->depth == 1 && numOfLevels == 1))
+        nodePtr = nodePtr->nextLevelPtr[currMask];    /* Update nodePtr to the next Level node with page indice of the target address */
+        return recordPageAccess(nodePtr, bitMaskAry); /*Call on the function itself to traverse down the tree recursively*/
+    }
+    else if (nodePtr->depth == numOfLevels) /* Return the number of accesses when the leaf node is reached*/
     {
         return nodePtr->numOfAccesses;
     }
 }
+
 void deleteAllLevelNodes(Level *node)
 {
     if (node == NULL)
