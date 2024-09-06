@@ -6,27 +6,17 @@
 #include "tracereader.h"
 #include "log.h"
 
-int main(int argc, char *argv[])
-{ // extract arguments from user input
-    if (argc != 3)
-    {
-        printf("Need to enter 2 arguments (excluding name of executable file)\n");
-        exit(1);
-    }
-
-    /*first argument: name of trace file*/
-    char *tracefile = argv[1];
-    /* second argument: pointer to first char of the
+void extractBitsPerLevel(char *stringInput, int *numOfLevels, int **numBitsPerLevelAry)
+{
+    /*pointer to first char of the
     input string that specifies number of bits per level*/
     char *numBitsPerLevelStr;
-    int *numBitsPerLevelAry = NULL; /*initialize pointer to an array that holds bits value for each level*/
-    int *entryCount = NULL;         /*pointer to an array storing number of entries for nextLevelPtr[] for each Level object*/
-    int currBitsNum;                /* placeholder for current bit that is detected as a digit*/
-    int numOfLevels = 0;            /*holds value indicating number of levels in the tree*/
+    int currBitsNum;  /* placeholder for current bit that is detected as a digit*/
+    *numOfLevels = 0; /*holds value indicating number of levels in the tree*/
 
     /* extract integers from the string value and place them in an array,
     each index represents a level and stores the num of bits as specified in the argument */
-    for (numBitsPerLevelStr = argv[2]; *numBitsPerLevelStr != '\0'; ++numBitsPerLevelStr)
+    for (numBitsPerLevelStr = stringInput; *numBitsPerLevelStr != '\0'; ++numBitsPerLevelStr)
     {                                     /*interate through the string */
         if (isdigit(*numBitsPerLevelStr)) /*if current char is a digit*/
         {
@@ -36,33 +26,42 @@ int main(int argc, char *argv[])
                 currBitsNum = currBitsNum * 10 + (*(numBitsPerLevelStr + 1) - '0'); /*combine two digits together*/
                 ++numBitsPerLevelStr;
             }
-            numOfLevels += 1;
+            *numOfLevels += 1;
             /*resize array to append the bits */
-            numBitsPerLevelAry = (int *)realloc(numBitsPerLevelAry, (numOfLevels) * sizeof(int));
-            numBitsPerLevelAry[numOfLevels - 1] = currBitsNum;
+            *numBitsPerLevelAry = (int *)realloc(*numBitsPerLevelAry, (*(numOfLevels)) * sizeof(int));
+            (*numBitsPerLevelAry)[*(numOfLevels)-1] = currBitsNum;
         }
     }
+}
 
-    /*initialize array storing number of entries for nextLevelPtr[] per Level*/
-    entryCount = (int *)malloc(numOfLevels * sizeof(int));
-    for (int i = 0; i < numOfLevels; ++i)
-    {
-        entryCount[i] = pow(2, numBitsPerLevelAry[i]);
-    }
-
+int getPageNumberLength(int addressLength, int numOfLevels, int *numBitsPerLevelAry)
+{
     int pageNumberLength = 0;
-    int addressLength = 32;
-    /* calculate number of bits in page number*/
     for (int i = 0; i < numOfLevels; ++i)
     {
         pageNumberLength += numBitsPerLevelAry[i];
     }
 
+    return pageNumberLength;
+}
+
+int *getEntryCountPerLevel(int numOfLevels, int *numBitsPerLevelAry)
+{
+    int *entryCount = (int *)malloc(numOfLevels * sizeof(int));
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        entryCount[i] = pow(2, numBitsPerLevelAry[i]);
+    }
+
+    return entryCount;
+}
+
+uint32_t *getMaskForEachIndice(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *maskedValRightShiftAmt)
+{
     unsigned int currMask;                                                     /*counter representing mask value for current level */
     unsigned int numOfMaskBits;                                                /*number of bits to mask the address value for current level*/
     unsigned int numOfPreviousMaskBits = 0;                                    /*number of mask bits from previous levels*/
     uint32_t *bitMaskAry = (uint32_t *)malloc(numOfLevels * sizeof(uint32_t)); /*initalize array to store mask value for address of each level*/
-    int *maskedValRightShiftAmt = (int *)malloc(numOfLevels * sizeof(int));    /*shift mask bits to the right to for output format*/
     /*Assign appropriate mask values for each level into array */
     for (int i = 0; i < numOfLevels; ++i)
     {
@@ -73,17 +72,72 @@ int main(int argc, char *argv[])
             currMask = currMask << 1;
             currMask = currMask | 1;
         }
-        maskedValRightShiftAmt[i] = addressLength - numOfMaskBits - numOfPreviousMaskBits;
         currMask = currMask << (maskedValRightShiftAmt[i]);
         numOfPreviousMaskBits += numBitsPerLevelAry[i];
         bitMaskAry[i] = currMask;
     }
+    return bitMaskAry;
+}
+
+int *getShiftAmtPerPageIndice(int addressLength, int *numBitsPerLevelAry, int numOfLevels)
+{
+    unsigned int numOfMaskBits;                                             /*number of bits to mask the address value for current level*/
+    unsigned int numOfPreviousMaskBits = 0;                                 /*number of mask bits from previous levels*/
+    int *maskedValRightShiftAmt = (int *)malloc(numOfLevels * sizeof(int)); /*shift mask bits to the right to for output format*/
+    /*Assign appropriate mask values for each level into array */
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        numOfMaskBits = numBitsPerLevelAry[i];
+        maskedValRightShiftAmt[i] = addressLength - numOfMaskBits - numOfPreviousMaskBits;
+        numOfPreviousMaskBits += numBitsPerLevelAry[i];
+    }
+
+    return maskedValRightShiftAmt;
+}
+
+Level createRootNode(PageTable *pgTblPtr, int *entryCount)
+{
+    /*Initialize level 0 object*/
+    Level **nextLevelPtr = (Level **)malloc(entryCount[0] * sizeof(Level *));
+    for (int i = 0; i < entryCount[0]; ++i)
+    {
+        nextLevelPtr[i] = NULL;
+    }
+    Level level0Obj = {0, 0, pgTblPtr, nextLevelPtr};
+    return level0Obj;
+}
+
+int main(int argc, char *argv[])
+{ // extract arguments from user input
+    if (argc != 3)
+    {
+        printf("Need to enter 2 arguments (excluding name of executable file)\n");
+        exit(1);
+    }
+
+    int *numBitsPerLevelAry = NULL; /*initialize pointer to an array that holds bits value for each level*/
+    int *entryCount = NULL;         /*pointer to an array storing number of entries for nextLevelPtr[] for each Level object*/
+    int numOfLevels;                /*holds value indicating number of levels in the tree*/
+
+    // extract integers from the string value and place them in an array,
+    extractBitsPerLevel(argv[2], &numOfLevels, &numBitsPerLevelAry);
+    /*initialize array storing number of entries for nextLevelPtr[] per Level*/
+    entryCount = getEntryCountPerLevel(numOfLevels, numBitsPerLevelAry);
+
+    int addressLength = 32;
+    int pageNumberLength = getPageNumberLength(addressLength, numOfLevels, numBitsPerLevelAry);
+
+    int *maskedValRightShiftAmt = NULL;
+    uint32_t *bitMaskAry = NULL; /*initalize array to store mask value for address of each level*/
+    maskedValRightShiftAmt = getShiftAmtPerPageIndice(addressLength, numBitsPerLevelAry, numOfLevels);
+    bitMaskAry = getMaskForEachIndice(numBitsPerLevelAry, numOfLevels, addressLength, maskedValRightShiftAmt);
     /*print bit masks information to standard output*/
     log_bitmasks(numOfLevels, bitMaskAry);
 
     FILE *ifp;           /* trace file */
     unsigned long i = 0; /* instructions processed */
     p2AddrTr trace;      /* traced address */
+    char *tracefile = argv[1];
 
     /*Initialize PageTable object*/
     PageTable pgTbl = {numOfLevels, numBitsPerLevelAry, bitMaskAry, maskedValRightShiftAmt, entryCount};
@@ -95,10 +149,10 @@ int main(int argc, char *argv[])
     {
         nextLevelPtr[i] = NULL;
     }
-    Level level0 = {0, 0, pgTblPtr, nextLevelPtr};
-    /*assigned level 0 object to a pointer*/
-    Level *level0Ptr = &level0;
-    pgTblPtr->rootLevel = level0Ptr;
+
+    Level rootNode = createRootNode(pgTblPtr, entryCount);
+    Level *rootNodePtr = &rootNode;
+    pgTblPtr->rootLevel = rootNodePtr;
 
     /* attempt to open trace file */
     if ((ifp = fopen(tracefile, "rb")) == NULL)
@@ -118,7 +172,7 @@ int main(int argc, char *argv[])
             {
                 maskedAddrByLevelAry[i] = extractPageNumberFromAddress(trace.addr, bitMaskAry[i], maskedValRightShiftAmt[i]);
             }
-            numOfAccesses = recordPageAccess(level0Ptr, maskedAddrByLevelAry);
+            numOfAccesses = recordPageAccess(rootNodePtr, maskedAddrByLevelAry);
             /* print address, its page indices per level and number of accesses to standard output*/
             log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }
@@ -126,7 +180,7 @@ int main(int argc, char *argv[])
 
     /* clean up and return success */
     fclose(ifp);
-    // deleteAllLevelNodes(level0Ptr);
+    // deleteAllLevelNodes(rootNodePtr);
     // free(pgTblPtr);
     free(numBitsPerLevelAry);
     free(maskedAddrByLevelAry);

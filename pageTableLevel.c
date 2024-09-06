@@ -35,26 +35,13 @@ unsigned int extractPageNumberFromAddress(unsigned int address, unsigned int mas
     return extractedNum;
 }
 
-/* --Pseudocode for recordPageAccess (recursive function)--
-if depth < max_depth
-        if (partial)address is found
-            increment num of access for the level at index that == address mask
-        else
-            // create new node at said index
-            nodePtr->nextLevelPtr[maskedAddrAry[nodePtr->depth]] = newNode(nodePtr->depth + 1, 1, nodePtr->pageTablePtr);
-
-        recordPageAccess(nodePtr->nextLevelPtr[maskedAddrAry[nodePtr->depth]], maskedAddrAry)
-
-else if depth == max_depth
-        return
-*/
 unsigned int recordPageAccess(Level *nodePtr, uint32_t *bitMaskAry)
 {
     int currDepth = nodePtr->depth;
     int numOfLevels = nodePtr->pageTablePtr->levelCount;
     uint32_t currMask = bitMaskAry[currDepth];
 
-    if (nodePtr->depth == 0) /* Increment the number of times the root node pointer was accessed*/
+    if (nodePtr->depth == 0) /* Increment numOfAccess everytime the root node pointer was accessed*/
     {
         nodePtr->numOfAccesses += 1;
     }
