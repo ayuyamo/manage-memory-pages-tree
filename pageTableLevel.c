@@ -3,6 +3,105 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+Level createRootNode(PageTable *pgTblPtr, int *entryCount)
+{
+    /*Initialize level 0 node*/
+    Level **nextLevelPtr = (Level **)malloc(entryCount[0] * sizeof(Level *));
+    for (int i = 0; i < entryCount[0]; ++i)
+    {
+        nextLevelPtr[i] = NULL;
+    }
+    Level level0Node = {0, 0, pgTblPtr, nextLevelPtr};
+    return level0Node;
+}
+
+void extractBitsPerLevel(char *stringInput, int *numOfLevels, int **numBitsPerLevelAry)
+{
+    char *numBitsPerLevelStr; /*Pointer to first char of the input string
+                                that specifies number of bits per level*/
+    int currBitsNum;          /*Placeholder for current bit that is detected as a digit*/
+    *numOfLevels = 0;         /*Number of levels in the tree*/
+
+    for (numBitsPerLevelStr = stringInput; *numBitsPerLevelStr != '\0'; ++numBitsPerLevelStr)
+    {
+        if (isdigit(*numBitsPerLevelStr)) /*check if current char is a digit*/
+        {
+            currBitsNum = *numBitsPerLevelStr - '0'; /*convert char to int*/
+            if (isdigit(*(numBitsPerLevelStr + 1)))  /*check if the following char is also a digit*/
+            {                                        /*checks if user input a two digit number*/
+                currBitsNum = currBitsNum * 10 +
+                              (*(numBitsPerLevelStr + 1) - '0'); /*combine two digits together*/
+                ++numBitsPerLevelStr;
+            }
+            *numOfLevels += 1;
+            /*Resize array to append the bits value */
+            *numBitsPerLevelAry = (int *)realloc(*numBitsPerLevelAry, (*(numOfLevels)) * sizeof(int));
+            (*numBitsPerLevelAry)[*(numOfLevels)-1] = currBitsNum;
+        }
+    }
+}
+
+int getPageNumberLength(int addressLength, int numOfLevels, int *numBitsPerLevelAry)
+{
+    int pageNumberLength = 0;
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        pageNumberLength += numBitsPerLevelAry[i];
+    }
+
+    return pageNumberLength;
+}
+
+int *getEntryCountPerLevel(int numOfLevels, int *numBitsPerLevelAry)
+{
+    int *entryCount = (int *)malloc(numOfLevels * sizeof(int));
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        entryCount[i] = pow(2, numBitsPerLevelAry[i]);
+    }
+
+    return entryCount;
+}
+
+uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *maskRightShiftAmt)
+{
+    unsigned int currMask;                                                     /*counter representing mask value for current level */
+    unsigned int bitMaskLength;                                                /*number of bits to mask the address value for current level*/
+    unsigned int numOfPreviousMaskBits = 0;                                    /*number of mask bits from previous levels*/
+    uint32_t *bitMaskAry = (uint32_t *)malloc(numOfLevels * sizeof(uint32_t)); /*initalize array to store mask value for address of each level*/
+    /*Assign appropriate mask values for each level into array */
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        currMask = 1;
+        bitMaskLength = numBitsPerLevelAry[i];
+        for (unsigned int b = 1; b < bitMaskLength; ++b)
+        {
+            currMask = currMask << 1;
+            currMask = currMask | 1;
+        }
+        currMask = currMask << (maskRightShiftAmt[i]);
+        numOfPreviousMaskBits += numBitsPerLevelAry[i];
+        bitMaskAry[i] = currMask;
+    }
+    return bitMaskAry;
+}
+
+int *getShiftAmtPerLevel(int addressLength, int *numBitsPerLevelAry, int numOfLevels)
+{
+    unsigned int numOfMaskBits;                                             /*number of bits to mask the address value for current level*/
+    unsigned int numOfPreviousMaskBits = 0;                                 /*number of mask bits from previous levels*/
+    int *maskedValRightShiftAmt = (int *)malloc(numOfLevels * sizeof(int)); /*shift mask bits to the right to for output format*/
+    /*Assign appropriate mask values for each level into array */
+    for (int i = 0; i < numOfLevels; ++i)
+    {
+        numOfMaskBits = numBitsPerLevelAry[i];
+        maskedValRightShiftAmt[i] = addressLength - numOfMaskBits - numOfPreviousMaskBits;
+        numOfPreviousMaskBits += numBitsPerLevelAry[i];
+    }
+
+    return maskedValRightShiftAmt;
+}
+
 Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
 {
     Level *newNode = (Level *)malloc(sizeof(Level));
@@ -27,7 +126,7 @@ void destroyPageTable(PageTable *pgTblPtr)
     free(pgTblPtr->entryCount);
 }
 
-unsigned int extractPageNumberFromAddress(unsigned int address, unsigned int mask, unsigned int shift)
+unsigned int extractPageIndiceFromAddress(unsigned int address, unsigned int mask, unsigned int shift)
 {
     unsigned int extractedNum;
     extractedNum = address & mask;

@@ -1,0 +1,4 @@
+*.exe
+bitmasking-demo.c
+test.*
+**/output
