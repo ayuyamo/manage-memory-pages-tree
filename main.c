@@ -1,3 +1,7 @@
+/*
+ * Name: Halie Do
+ * RedID: 827707836
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -26,12 +30,11 @@ int main(int argc, char *argv[])
     entryCount = getEntryCountPerLevel(numOfLevels, numBitsPerLevelAry);
 
     int addressLength = 32;
-    int pageNumberLength = getPageNumberLength(addressLength, numOfLevels, numBitsPerLevelAry);
 
-    int *rightShiftAmt = NULL;   /*Store shift amount of masks for page indices in each level*/
+    int *shiftAmt = NULL;        /*Store shift amount of masks for page indices in each level*/
     uint32_t *bitMaskAry = NULL; /*Initalize array to store mask value for address of each level*/
-    rightShiftAmt = getShiftAmtPerLevel(addressLength, numBitsPerLevelAry, numOfLevels);
-    bitMaskAry = getBitMaskForEachLevel(numBitsPerLevelAry, numOfLevels, addressLength, rightShiftAmt);
+    shiftAmt = getShiftAmtPerLevel(addressLength, numBitsPerLevelAry, numOfLevels);
+    bitMaskAry = getBitMaskForEachLevel(numBitsPerLevelAry, numOfLevels, addressLength, shiftAmt);
     /*print bit masks information to standard output*/
     log_bitmasks(numOfLevels, bitMaskAry);
 
@@ -41,7 +44,7 @@ int main(int argc, char *argv[])
     char *tracefile = argv[1];
 
     /*Initialize PageTable object*/
-    PageTable pgTbl = {numOfLevels, numBitsPerLevelAry, bitMaskAry, rightShiftAmt, entryCount};
+    PageTable pgTbl = {numOfLevels, numBitsPerLevelAry, bitMaskAry, shiftAmt, entryCount};
     PageTable *pgTblPtr = &pgTbl;
 
     /*Initialize level 0 object*/
@@ -64,21 +67,19 @@ int main(int argc, char *argv[])
         if (NextAddress(ifp, &trace))
         {
             /*Mask address by level */
-            for (int i = 0; i < numOfLevels; ++i)
+            for (i = 0; i < numOfLevels; ++i)
             {
-                maskedAddrByLevelAry[i] = extractPageIndiceFromAddress(trace.addr, bitMaskAry[i], rightShiftAmt[i]);
+                maskedAddrByLevelAry[i] = extractPageIndiceFromAddress(trace.addr, bitMaskAry[i], shiftAmt[i]);
             }
             numOfAccesses = recordPageAccess(rootNodePtr, maskedAddrByLevelAry);
             /*Print address, its page indices per level and number of accesses to standard output*/
             log_pgindices_numofaccesses(trace.addr, numOfLevels, maskedAddrByLevelAry, numOfAccesses);
         }
     }
-
     /* Close file after finish reading */
     fclose(ifp);
     /* Free allocated memory*/
     // deleteAllLevelNodes(rootNodePtr);
-    // free(pgTblPtr);
     free(numBitsPerLevelAry);
     free(maskedAddrByLevelAry);
     free(bitMaskAry);

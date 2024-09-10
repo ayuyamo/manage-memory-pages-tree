@@ -1,15 +1,18 @@
 #Makefile
 
+#Name: Halie Do
+#Red ID: 827707836
+
 #.RECIPEPREFIX +=
 
 # Specify compiler
-CC = g++
+CC = gcc
 # Compiler flags, if you want debug info, add -g
-CCFLAGS = -std=c++11 -g3 -Wall -c
+CCFLAGS = -std=c11 -g3 -Wall -c
 CFLAGS = -g3 -c
 
 # object files
-OBJS = pageTableLevel.o tracereader.o main.o log.o
+OBJS = pageTableLevel.o tracereader.o main.o log.o -lm
 
 # Program name
 PROGRAM = pagetrace

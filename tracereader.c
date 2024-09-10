@@ -1,7 +1,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "tracereader.h"
-
+/*
+ * Name: Halie Do
+ * RedID: 827707836
+ */
 /*
  * If you are using this program on a big-endian machine (something
  * other than an Intel PC or equivalent) the unsigned longs will need

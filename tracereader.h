@@ -3,9 +3,14 @@
  * Check and see if we are using C or C++ and include appropriately
  * so that this will compile under C and C++
  */
+/*
+ * Name: Halie Do
+ * RedID: 827707836
+ */
 #ifdef __cplusplus
 /* C++ includes */
 #include <stdint.h>
+#include <stdio.h>
 #else
 /* C includes */
 #include <inttypes.h>

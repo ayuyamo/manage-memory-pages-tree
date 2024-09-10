@@ -1,3 +1,7 @@
+/*
+ * Name: Halie Do
+ * RedID: 827707836
+ */
 #include "pageTableLevel.h"
 #include <math.h>
 #include <stdio.h>
@@ -63,7 +67,7 @@ int *getEntryCountPerLevel(int numOfLevels, int *numBitsPerLevelAry)
     return entryCount;
 }
 
-uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *maskRightShiftAmt)
+uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *leftShiftAmt)
 {
     unsigned int currMask;                                                     /*counter representing mask value for current level */
     unsigned int bitMaskLength;                                                /*number of bits to mask the address value for current level*/
@@ -79,7 +83,7 @@ uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int a
             currMask = currMask << 1;
             currMask = currMask | 1;
         }
-        currMask = currMask << (maskRightShiftAmt[i]);
+        currMask = currMask << (leftShiftAmt[i]);
         numOfPreviousMaskBits += numBitsPerLevelAry[i];
         bitMaskAry[i] = currMask;
     }
@@ -88,18 +92,18 @@ uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int a
 
 int *getShiftAmtPerLevel(int addressLength, int *numBitsPerLevelAry, int numOfLevels)
 {
-    unsigned int numOfMaskBits;                                             /*number of bits to mask the address value for current level*/
-    unsigned int numOfPreviousMaskBits = 0;                                 /*number of mask bits from previous levels*/
-    int *maskedValRightShiftAmt = (int *)malloc(numOfLevels * sizeof(int)); /*shift mask bits to the right to for output format*/
+    unsigned int numOfMaskBits;                                   /*number of bits to mask the address value for current level*/
+    unsigned int numOfPreviousMaskBits = 0;                       /*number of mask bits from previous levels*/
+    int *maskShiftAmt = (int *)malloc(numOfLevels * sizeof(int)); /*shift mask bits to the right to for output format*/
     /*Assign appropriate mask values for each level into array */
     for (int i = 0; i < numOfLevels; ++i)
     {
         numOfMaskBits = numBitsPerLevelAry[i];
-        maskedValRightShiftAmt[i] = addressLength - numOfMaskBits - numOfPreviousMaskBits;
+        maskShiftAmt[i] = addressLength - numOfMaskBits - numOfPreviousMaskBits;
         numOfPreviousMaskBits += numBitsPerLevelAry[i];
     }
 
-    return maskedValRightShiftAmt;
+    return maskShiftAmt;
 }
 
 Level *newNode(int depth, int numOfAccess, PageTable *pageTablePtr)
@@ -139,32 +143,24 @@ unsigned int recordPageAccess(Level *nodePtr, uint32_t *bitMaskAry)
     int currDepth = nodePtr->depth;
     int numOfLevels = nodePtr->pageTablePtr->levelCount;
     uint32_t currMask = bitMaskAry[currDepth];
-
-    if (nodePtr->depth == 0) /* Increment numOfAccess everytime the root node pointer was accessed*/
-    {
-        nodePtr->numOfAccesses += 1;
-    }
-    if (currDepth <= numOfLevels - 1) /*Executes when page indices are still being inserted into the tree */
-    {
-        if (nodePtr->nextLevelPtr[currMask] != NULL)
-        { /*Increment num of access of current Level node if page indice
-            already exists in its nextLevelPtr array*/
-            nodePtr->nextLevelPtr[currMask]->numOfAccesses += 1;
-        }
-        else
-        { /* If page indice does not exist, create & initalize a new
-             level node pointer and pass it into nextLevelPtr array */
-            Level *newNodePtr;
-            newNodePtr = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
-            nodePtr->nextLevelPtr[currMask] = newNodePtr;
-        }
-        nodePtr = nodePtr->nextLevelPtr[currMask];    /* Update nodePtr to the next Level node with page indice of the target address */
-        return recordPageAccess(nodePtr, bitMaskAry); /*Call on the function itself to traverse down the tree recursively*/
-    }
-    else if (nodePtr->depth == numOfLevels) /* Return the number of accesses when the leaf node is reached*/
-    {
+    if (currDepth == numOfLevels) /* Return the number of accesses when the leaf node is reached*/
         return nodePtr->numOfAccesses;
+
+    if (currDepth == 0) /* Increment numOfAccess everytime the root node pointer was accessed*/
+        nodePtr->numOfAccesses += 1;
+
+    if (nodePtr->nextLevelPtr[currMask] != NULL)
+    { /*Increment num of access of current Level node if page indice
+        already exists in its nextLevelPtr array*/
+        nodePtr->nextLevelPtr[currMask]->numOfAccesses += 1;
     }
+    else
+    { /* If page indice does not exist, create & initalize a new
+         level node pointer and pass it into nextLevelPtr array */
+        nodePtr->nextLevelPtr[currMask] = newNode(currDepth + 1, 1, nodePtr->pageTablePtr);
+    }
+    nodePtr = nodePtr->nextLevelPtr[currMask];    /* Update nodePtr to the next Level node with page indice of the target address */
+    return recordPageAccess(nodePtr, bitMaskAry); /*Call on the function itself to traverse down the tree recursively*/
 }
 
 void deleteAllLevelNodes(Level *node)

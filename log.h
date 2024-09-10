@@ -1,3 +1,7 @@
+/*
+ * Name: Halie Do
+ * RedID: 827707836
+ */
 #ifndef LOG_HELPERS_H
 #define LOG_HELPERS_H
 
@@ -23,11 +27,11 @@
 /* C includes */
 #include <inttypes.h>
 #include <stdbool.h>
-#endif 
+#endif
 
 /**
  * @brief Print out bitmasks for all page table levels.
- * 
+ *
  * @param levels - Number of levels
  * @param masks - Pointer to array of bitmasks
  */
@@ -35,15 +39,15 @@ void log_bitmasks(int levels, uint32_t *masks);
 
 /**
  * @brief log page indices at all levels and the number of page accesses
- * 
+ *
  * @param address
  * @param levels      - number of levels in page table
- * @param pageIndices - pageIndices[idx] is the page number associated with 
+ * @param pageIndices - pageIndices[idx] is the page number associated with
  *	                    level idx (0 < idx < levels)
- * @param numOfAccesses - number of page accesses 
+ * @param numOfAccesses - number of page accesses
  */
-void log_pgindices_numofaccesses(uint32_t address, int levels, 
-                                 uint32_t *pageIndices, 
+void log_pgindices_numofaccesses(uint32_t address, int levels,
+                                 uint32_t *pageIndices,
                                  uint32_t numOfAccesses);
 
 #endif
