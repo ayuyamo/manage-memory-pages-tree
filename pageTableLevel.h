@@ -15,7 +15,7 @@ typedef struct Level Level; /*Declare struct Level*/
  * @param levelCount - Number of levels in the tree
  * @param bitsPerLevel - Number of bits per level
  * @param bitMaskAry - Mask value per level
- * @param shiftAry - Shift right amount for address in each level
+ * @param shiftAry - Shift amount for address in each level
  * @param entryCount - Number of entries per level in nextLevelPtr[] of level object
  * @param rootLevel - Pointer to root level object
  */
@@ -73,14 +73,6 @@ void extractBitsPerLevel(char *stringInput, int *numOfLevels, int **numBitsPerLe
  * @param numOfLevels - Number of levels in the tree
  * @param numBitsPerLevelAry - Store number of bits per page table level
  */
-int getPageNumberLength(int addressLength, int numOfLevels, int *numBitsPerLevelAry);
-
-/**
- * @brief - Get number of entries in next level pointers array of Level objects by depth
- *
- * @param numOfLevels - Number of levels in the tree
- * @param numBitsPerLevelAry - Store number of page number bits per level
- */
 int *getEntryCountPerLevel(int numOfLevels, int *numBitsPerLevelAry);
 
 /**
@@ -89,9 +81,9 @@ int *getEntryCountPerLevel(int numOfLevels, int *numBitsPerLevelAry);
  * @param numBitsPerLevelAry - Store size of page indice in each level
  * @param numOfLevels - Store number of levels in the tree
  * @param addressLength - Length of address to be stored in the tree
- * @param maskedValRightShiftAmt - Store shift amount of masks for page indices in each level
+ * @param leftShiftAmt - Store shift amount of masks for page indices in each level
  */
-uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *maskRightShiftAmt);
+uint32_t *getBitMaskForEachLevel(int *numBitsPerLevelAry, int numOfLevels, int addressLength, int *leftShiftAmt);
 
 /**
  * @brief - Return array storing shift amount (in bits) for page indices in each level
