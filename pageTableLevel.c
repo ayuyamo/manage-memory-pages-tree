@@ -170,9 +170,8 @@ void deleteAllLevelNodes(Level *node)
     int nextLvlPtrLength = node->pageTablePtr->entryCount[node->depth];
     for (int i = 0; i < nextLvlPtrLength; ++i)
     {
-        if (node->nextLevelPtr[i] == NULL)
-            continue;
-        deleteAllLevelNodes((Level *)node->nextLevelPtr[i]);
+        if (node->nextLevelPtr[i] != NULL)
+            deleteAllLevelNodes(node->nextLevelPtr[i]);
     }
     free(node->nextLevelPtr);
     free(node);

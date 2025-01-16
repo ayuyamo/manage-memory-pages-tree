@@ -3,7 +3,7 @@
 #Name: Halie Do
 #Red ID: 827707836
 
-#.RECIPEPREFIX +=
+.RECIPEPREFIX +=
 
 # Specify compiler
 CC = gcc
@@ -12,14 +12,14 @@ CCFLAGS = -std=c11 -g3 -Wall -c
 CFLAGS = -g3 -c
 
 # object files
-OBJS = pageTableLevel.o tracereader.o main.o log.o -lm
+OBJS = pageTableLevel.o tracereader.o main.o log.o
 
 # Program name
 PROGRAM = pagetrace
 
 # The program depends upon its object files
 $(PROGRAM) : $(OBJS)
-	$(CC) -o $(PROGRAM) $(OBJS)
+	$(CC) -o $(PROGRAM) $(OBJS) -lm
 
 main.o : main.c 
 	$(CC) $(CCFLAGS) main.c
@@ -39,3 +39,9 @@ log.o : log.c log.h
 # with ~, we will delete those as well.
 clean :
 	rm -rf $(OBJS) *~ $(PROGRAM)
+
+run:
+	make clean
+	make
+	./pagetrace trace.tr "4 8 8"
+	make clean

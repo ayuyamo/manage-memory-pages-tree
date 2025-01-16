@@ -2,3 +2,4 @@
 bitmasking-demo.c
 test.*
 **/output
+*.o
